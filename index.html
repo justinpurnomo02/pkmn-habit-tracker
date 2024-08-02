@@ -1,3 +1,7 @@
+from IPython.display import display, HTML, Javascript
+
+html_code = """
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,12 +116,13 @@
         ];
 
         const pokemonList = [
-            'Bulbasaur', 'Charmander', 'Squirtle', 'Vulpix', 'Meowth', 'Psyduck', 'Growlithe', 
+            'Bulbasaur', 'Charmander', 'Squirtle', 'Vulpix', 'Meowth', 'Psyduck', 'Growlithe',
             'Dratini', 'Pichu', 'Cleffa', 'Mareep', 'Aipom', 'Wooper',
-            'Murkrow', 'Misdreavus', 'Swinub', 'Houndour',
+            'Murkrow', 'Misdreavus', 'Swinub', 'Houndour', 'Elekid', 'Magby',
             'Larvitar', 'Makuhita', 'Swablu', 'Starly', 'Shinx', 'Buizel', 'Drifloon', 'Gible', 'Riolu', 'Croagunk', 'Munchlax',
             'Snivy', 'Tepig', 'Oshawott', 'Zorua',
-            'Minccino', 'Mienfoo', 'Hatenna', 'Sprigatito', 'Fuecoco', 'Quaxly', 'Pawmi', 'Fidough', 'Tinkatink'
+            'Minccino', 'Mienfoo', 'Larvesta',
+            'Hatenna', 'Sprigatito', 'Fuecoco', 'Quaxly', 'Pawmi', 'Fidough', 'Tinkatink'
         ];
 
         const pokemonData = {};
@@ -287,6 +292,8 @@ Vulpix: {level: 34, next: 'Ninetales' },
 Meowth: { level: 28, next: 'Persian' },
 Psyduck: { level: 33, next: 'Golduck' },
 Growlithe: { level: 34, next: 'Arcanine' },
+Electabuzz: { level: 41, next: 'Electivire' },
+Magmar: { level: 41, next: 'Magmortar' },
 Dratini: { level: 30, next: 'Dragonair' },
 Dragonair: { level: 55, next: 'Dragonite' },
 Pichu: { level: 15, next: 'Pikachu' },
@@ -300,6 +307,8 @@ Misdreavus: { level: 40, next: 'Mismagius' },
 Swinub: { level: 33, next: 'Piloswine' },
 Piloswine: { level: 45, next: 'Mamoswine' },
 Houndour: { level: 24, next: 'Houndoom' },
+Elekid: { level: 30, next: 'Electabuzz' },
+Magby: { level: 30, next: 'Magmar' },
 Larvitar: { level: 30, next: 'Pupitar' },
 Pupitar: { level: 55, next: 'Tyranitar' },
 Makuhita: { level: 24, next: 'Hariyama' },
@@ -324,6 +333,7 @@ Dewott: { level: 36, next: 'Samurott' },
 Zorua: { level: 30, next: 'Zoroark' },
 Minccino: { level: 33, next: 'Cinccino' },
 Mienfoo: { level: 50, next: 'Mienshao' },
+Larvesta: { level: 59, next: 'Volcarona' },
 Hatenna: { level: 32, next: 'Hattrem' },
 Hattrem: { level: 42, next: 'Hatterene' },
 Sprigatito: { level: 16, next: 'Floragato' },
@@ -414,3 +424,7 @@ function sortByLevel() {
     </script>
 </body>
 </html>
+
+"""
+
+display(HTML(html_code))
