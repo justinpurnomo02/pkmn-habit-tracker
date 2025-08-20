@@ -5,259 +5,250 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pokémon Habit Tracker</title>
 <style>
-    body { font-family: Arial; text-align: center; margin-top: 20px; }
-    input, button, select { padding: 8px; font-size: 14px; margin: 4px; }
-    #pokemonContainer { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-    .pokemon { text-align: center; width: 20%; max-width: 200px; border: 1px solid #ccc; padding: 10px; }
-    .pokemon img { max-width: 120px; max-height: 120px; }
-    .xp-bar { width: 100%; background-color: #eee; border: 1px solid #ccc; height: 15px; margin-top: 5px; position: relative; }
-    .xp-bar div { height: 100%; background-color: #4caf50; position: absolute; top: 0; left: 0; }
-    .sprite-placeholder { font-size: 14px; color: #999; line-height: 120px; }
-    .inputGroup { margin-bottom: 10px; }
-    .inputContainer { margin-bottom: 10px; }
-    .pokemon-info { margin-top: 5px; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-    .gender-sign { font-size: 20px; margin-left: 4px; }
-    .male { color: blue; }
-    .female { color: red; }
-    .nature { font-size: 14px; margin-top: 5px; }
+body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+input, button, select { padding: 8px; font-size: 14px; margin: 4px; }
+#topControls { margin-bottom: 20px; }
+#pokemonInputs { margin-bottom: 20px; }
+#pokemonContainer { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.pokemon { text-align: center; width: 20%; max-width: 200px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; position: relative;}
+.pokemon img { max-width: 120px; max-height: 120px; }
+.xp-bar { width: 100%; background-color: #eee; border: 1px solid #ccc; height: 15px; margin-top: 5px; position: relative; }
+.xp-bar div { height: 100%; background-color: #4caf50; position: absolute; top: 0; left: 0; }
+.gender-sign.male { color: blue; }
+.gender-sign.female { color: red; }
+.delete-pokemon-btn { position: absolute; top: 5px; right: 5px; font-size: 12px; padding: 2px 5px; }
 </style>
 </head>
 <body>
 <h1>Pokémon Habit Tracker</h1>
 
-<div class="inputGroup">
+<div id="topControls">
+    <button onclick="sortByLevel()">Sort by Level</button>
+    <button onclick="sortByHabitOrder()">Sort by Habit Order</button>
+    <button onclick="exportData()">Export Data</button>
+    <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display:none">
+    <button onclick="document.getElementById('importFile').click()">Import Data</button>
     <button onclick="addPokemonInput()">Add Pokémon</button>
+    <button onclick="deletePokemonPrompt()">Delete Pokémon</button>
 </div>
-<div id="pokemonInputs"></div>
 
-<button onclick="update()">Update</button>
-<button onclick="sortByLevel()">Sort by Level</button>
-<button onclick="sortByHabitOrder()">Sort by Habit Order</button>
+<div id="pokemonInputs">
+    <!-- New Pokémon input box appears here -->
+</div>
 
-<button onclick="exportData()">Export Data</button>
-<input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display: none;">
-<button onclick="document.getElementById('importFile').click()">Import Data</button>
-
-<div id="pokemonContainer"></div>
+<div id="pokemonContainer">
+    <!-- Pokémon cards appear here -->
+</div>
 
 <script>
-const natures = ['Adamant', 'Bashful', 'Bold', 'Brave', 'Calm', 'Careful', 'Docile', 'Gentle','Hardy','Hasty','Impish','Jolly','Lax','Mild','Modest','Naive'];
+// --------------------------- Data -----------------------------
+const natures = ['Adamant','Bashful','Bold','Brave','Calm','Careful','Docile','Gentle',
+'Hardy','Hasty','Impish','Jolly','Lax','Mild','Modest','Naive'];
+
 const pokemonList = ['Bulbasaur','Charmander','Squirtle','Vulpix','Meowth','Psyduck','Growlithe','Dratini','Pichu','Cleffa','Mareep','Aipom','Wooper','Murkrow','Misdreavus','Swinub','Houndour','Elekid','Magby','Larvitar','Makuhita','Swablu','Starly','Shinx','Buizel','Drifloon','Gible','Riolu','Croagunk','Munchlax','Snivy','Tepig','Oshawott','Zorua','Minccino','Mienfoo','Larvesta','Hatenna','Sprigatito','Fuecoco','Quaxly','Pawmi','Fidough','Tinkatink'];
 
-let pokemonData = {};
-let pokemonCount = 0;
-
-// ======= Local Storage Load =======
-window.onload = () => {
-    const savedData = localStorage.getItem('pokemonData');
-    if(savedData){
-        pokemonData = JSON.parse(savedData);
-        Object.keys(pokemonData).forEach(pokemonId => {
-            pokemonCount++;
-            createPokemonInputFromData(pokemonId, pokemonData[pokemonId]);
-            createPokemonContainer(pokemonId);
-            updatePokemon(pokemonId);
-        });
-    }
+const evolutionData = {
+	'bulbasaur': { level: 16, evolvesTo: 'ivysaur' },
+    'ivysaur': { level: 32, evolvesTo: 'venusaur' },
+    'charmander': { level: 16, evolvesTo: 'charmeleon' },
+    'charmeleon': { level: 36, evolvesTo: 'charizard' },
+    'squirtle': { level: 16, evolvesTo: 'wartortle' },
+    'wartortle': { level: 36, evolvesTo: 'blastoise' },
+    'pikachu': { level: 31, evolvesTo: 'raichu' },
+    'clefairy': { level: 31, evolvesTo: 'clefable' },
+    'vulpix': { level: 34, evolvesTo: 'ninetales' },
+    'meowth': { level: 28, evolvesTo: 'persian' },
+    'psyduck': { level: 33, evolvesTo: 'golduck' },
+    'growlithe': { level: 34, evolvesTo: 'arcanine' },
+    'electabuzz': { level: 41, evolvesTo: 'electivire' },
+    'magmar': { level: 41, evolvesTo: 'magmortar' },
+    'dratini': { level: 30, evolvesTo: 'dragonair' },
+    'dragonair': { level: 55, evolvesTo: 'dragonite' },
+    'pichu': { level: 15, evolvesTo: 'pikachu' },
+    'cleffa': { level: 15, evolvesTo: 'clefairy' },
+    'mareep': { level: 15, evolvesTo: 'flaaffy' },
+    'flaaffy': { level: 30, evolvesTo: 'ampharos' },
+    'aipom': { level: 32, evolvesTo: 'ambipom' },
+    'wooper': { level: 20, evolvesTo: 'quagsire' },
+    'murkrow': { level: 40, evolvesTo: 'honchkrow' },
+    'misdreavus': { level: 40, evolvesTo: 'mismagius' },
+    'swinub': { level: 33, evolvesTo: 'piloswine' },
+    'piloswine': { level: 45, evolvesTo: 'mamoswine' },
+    'houndour': { level: 24, evolvesTo: 'houndoom' },
+    'elekid': { level: 30, evolvesTo: 'electabuzz' },
+    'magby': { level: 30, evolvesTo: 'magmar' },
+    'larvitar': { level: 30, evolvesTo: 'pupitar' },
+    'pupitar': { level: 55, evolvesTo: 'tyranitar' },
+    'makuhita': { level: 24, evolvesTo: 'hariyama' },
+    'swablu': { level: 35, evolvesTo: 'altaria' },
+    'starly': { level: 14, evolvesTo: 'staravia' },
+    'staravia': { level: 34, evolvesTo: 'staraptor' },
+    'shinx': { level: 15, evolvesTo: 'luxio' },
+    'luxio': { level: 30, evolvesTo: 'luxray' },
+    'buizel': { level: 26, evolvesTo: 'floatzel' },
+    'drifloon': { level: 28, evolvesTo: 'drifblim' },
+    'gible': { level: 24, evolvesTo: 'gabite' },
+    'gabite': { level: 48, evolvesTo: 'garchomp' },
+    'munchlax': { level: 40, evolvesTo: 'snorlax' },
+    'riolu': { level: 30, evolvesTo: 'lucario' },
+    'croagunk': { level: 37, evolvesTo: 'toxicroak' },
+    'snivy': { level: 17, evolvesTo: 'servine' },
+    'servine': { level: 36, evolvesTo: 'serperior' },
+    'tepig': { level: 17, evolvesTo: 'pignite' },
+    'pignite': { level: 36, evolvesTo: 'emboar' },
+    'oshawott': { level: 17, evolvesTo: 'dewott' },
+    'dewott': { level: 36, evolvesTo: 'samurott' },
+    'zorua': { level: 30, evolvesTo: 'zoroark' },
+    'minccino': { level: 33, evolvesTo: 'cinccino' },
+    'mienfoo': { level: 50, evolvesTo: 'mienshao' },
+    'larvesta': { level: 59, evolvesTo: 'volcarona' },
+    'hatenna': { level: 32, evolvesTo: 'hattrem' },
+    'hattrem': { level: 42, evolvesTo: 'hatterene' },
+    'sprigatito': { level: 16, evolvesTo: 'floragato' },
+    'floragato': { level: 36, evolvesTo: 'meowscarada' },
+    'fuecoco': { level: 16, evolvesTo: 'crocalor' },
+    'crocalor': { level: 36, evolvesTo: 'skeledirge' },
+    'quaxly': { level: 16, evolvesTo: 'quaxwell' },
+    'quaxwell': { level: 36, evolvesTo: 'quaquaval' },
+    'pawmi': { level: 18, evolvesTo: 'pawmo' },
+    'pawmo': { level: 36, evolvesTo: 'pawmot' },
+    'fidough': { level: 26, evolvesTo: 'dachsbun' },
+    'tinkatink': { level: 24, evolvesTo: 'tinkatuff' },
+    'tinkatuff': { level: 38, evolvesTo: 'tinkaton' }
 };
 
-// ======= Add Pokémon =======
-function addPokemonInput() {
-    pokemonCount++;
-    const pokemonId = `pokemon${pokemonCount}`;
-    pokemonData[pokemonId] = {
-        level: 1, xp: 0, habit: '', history: [], sprite: '', nickname: '', gender: getRandomGender(), nature: getRandomNature(), defaultName: ''
-    };
-    createPokemonInputFromData(pokemonId, pokemonData[pokemonId]);
-    createPokemonContainer(pokemonId);
-    saveData();
-}
+// Load or initialize
+let pokemonData = JSON.parse(localStorage.getItem('pokemonData')) || {};
+let pokemonCount = Object.keys(pokemonData).length;
 
-function createPokemonInputFromData(pokemonId, data){
+// ---------------------- Utilities ----------------------------
+function saveData(){ localStorage.setItem('pokemonData', JSON.stringify(pokemonData)); }
+function getRandomNature(){ return natures[Math.floor(Math.random()*natures.length)]; }
+function getRandomGender(){ return Math.random()<0.5?'Male':'Female'; }
+function capitalizeFirstLetter(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function getHabitsRequiredForLevel(level){ if(level<=10) return 2; if(level<=20) return 3; if(level<=30) return 4; return 5; }
+
+// ---------------------- Add / Remove Pokémon -----------------
+function addPokemonInput(){
+    const id = 'new'; // temporary input box ID
+    if(document.getElementById('pokemon-input-container-'+id)) return; // only one at a time
+
     const container = document.createElement('div');
-    container.className = 'inputContainer';
-    container.id = `pokemon-input-container-${pokemonId}`;
-    const options = pokemonList.map(p => `<option value="${p}" ${data.defaultName === p ? 'selected' : ''}>${p}</option>`).join('');
-    container.innerHTML = `
-        <input type="text" id="habit-${pokemonId}" placeholder="Enter Habit" value="${data.habit || ''}">
-        <select id="pokemon-input-${pokemonId}" onchange="updatePokemonData('${pokemonId}')">
-            <option value="">Select Pokémon</option>${options}
-        </select>
-        <input type="text" id="nickname-${pokemonId}" placeholder="Enter Nickname" value="${data.nickname || ''}">
-        <button onclick="removePokemonInput('${pokemonId}')">Remove Pokémon</button>
-    `;
+    container.className='inputContainer'; container.id=`pokemon-input-container-${id}`;
+    const options = pokemonList.map(p=>`<option value="${p}">${p}</option>`).join('');
+    container.innerHTML=`
+        <input type="text" id="habit-${id}" placeholder="Enter Habit">
+        <select id="pokemon-input-${id}"><option value="">Select Pokémon</option>${options}</select>
+        <input type="text" id="nickname-${id}" placeholder="Enter Nickname">
+        <button onclick="confirmAddPokemon()">Add</button>`;
     document.getElementById('pokemonInputs').appendChild(container);
 }
 
-// ======= Create Pokémon Container =======
+function confirmAddPokemon(){
+    const id = 'new';
+    const habit = document.getElementById(`habit-${id}`)?.value || '';
+    const nickname = document.getElementById(`nickname-${id}`)?.value || '';
+    const defaultName = document.getElementById(`pokemon-input-${id}`)?.value || '';
+    if(!defaultName) { alert('Select a Pokémon first!'); return; }
+
+    pokemonCount++;
+    const pid = `pokemon${pokemonCount}`;
+    pokemonData[pid] = {level:1, xp:0, habit, nickname, history:[], sprite:'', gender:getRandomGender(), nature:getRandomNature(), defaultName:capitalizeFirstLetter(defaultName)};
+    createPokemonContainer(pid);
+
+    document.getElementById(`pokemon-input-container-${id}`).remove();
+    saveData();
+}
+
+// Delete Pokémon prompt
+function deletePokemonPrompt(){
+    const keys = Object.keys(pokemonData);
+    if(keys.length===0){ alert('No Pokémon to delete'); return; }
+    const names = keys.map(k=>pokemonData[k].nickname||pokemonData[k].defaultName);
+    const sel = prompt('Enter the number(s) of Pokémon to delete (comma separated):\n'+names.map((n,i)=>`${i+1}: ${n}`).join('\n'));
+    if(!sel) return;
+    const indices = sel.split(',').map(s=>parseInt(s.trim())-1).filter(i=>i>=0 && i<keys.length);
+    indices.forEach(i=>{
+        const pid = keys[i];
+        document.getElementById(`${pid}-container`)?.remove();
+        delete pokemonData[pid];
+    });
+    saveData();
+}
+
+// ---------------------- Create / Update Pokémon -----------------
 function createPokemonContainer(pokemonId){
-    const container = document.createElement('div');
-    container.className = 'pokemon';
-    container.id = `${pokemonId}-container`;
-    container.innerHTML = `
-        <div id="${pokemonId}-info" class="pokemon-info">
+    const container=document.createElement('div');
+    container.className='pokemon'; container.id=`${pokemonId}-container`;
+    container.innerHTML=`
+        <div id="${pokemonId}-info">
             <span id="${pokemonId}-nickname"></span>
             <span id="${pokemonId}-gender" class="gender-sign"></span>
         </div>
-        <div>Habit: <span id="${pokemonId}-habit">None</span></div>
-        <div class="nature">Nature: <span id="${pokemonId}-nature"></span></div>
-        <img id="${pokemonId}-img" src="" alt="Pokémon ${pokemonId}" class="sprite-placeholder">
-        <div>Level: <span id="${pokemonId}-level">1</span></div>
-        <div class="xp-bar"><div id="${pokemonId}-xp" style="width:0%"></div></div>
+        <div>Habit: <span id="${pokemonId}-habit"></span></div>
+        <div>Nature: <span id="${pokemonId}-nature"></span></div>
+        <img id="${pokemonId}-img" src="" class="sprite-placeholder">
+        <div>Level: <span id="${pokemonId}-level"></span></div>
+        <div class="xp-bar"><div id="${pokemonId}-xp"></div></div>
         <button onclick="performHabit('${pokemonId}')">Perform Habit</button>
         <button onclick="undoHabit('${pokemonId}')">Undo</button>
-    `;
+        <button class="delete-pokemon-btn" onclick="deletePokemonContainer('${pokemonId}')">Delete</button>`;
     document.getElementById('pokemonContainer').appendChild(container);
-}
-
-// ======= Helpers =======
-function getRandomNature(){ return natures[Math.floor(Math.random()*natures.length)]; }
-function getRandomGender(){ return Math.random()<0.5?'Male':'Female'; }
-function capitalizeFirstLetter(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
-
-// ======= Update Pokémon =======
-function updatePokemonData(pokemonId){
-    const p = pokemonData[pokemonId];
-    p.habit = document.getElementById(`habit-${pokemonId}`).value;
-    p.nickname = document.getElementById(`nickname-${pokemonId}`).value;
-    const selectVal = document.getElementById(`pokemon-input-${pokemonId}`).value.trim();
-    if(selectVal) p.defaultName = capitalizeFirstLetter(selectVal);
     updatePokemon(pokemonId);
-    saveData();
 }
 
-function update(){
-    Object.keys(pokemonData).forEach(updatePokemonData);
-}
-
-// ======= Update Pokémon Display =======
-function updatePokemon(pokemonId){
-    const p = pokemonData[pokemonId];
-    document.getElementById(`${pokemonId}-habit`).innerText = p.habit || 'None';
-    document.getElementById(`${pokemonId}-nickname`).innerText = p.nickname || p.defaultName;
-    document.getElementById(`${pokemonId}-nature`).innerText = p.nature;
-    document.getElementById(`${pokemonId}-gender`).innerText = p.gender==='Male'?'♂':'♀';
-    document.getElementById(`${pokemonId}-gender`).className=`gender-sign ${p.gender.toLowerCase()}`;
-    document.getElementById(`${pokemonId}-level`).innerText = p.level;
-    document.getElementById(`${pokemonId}-xp`).style.width = (p.xp/getHabitsRequiredForLevel(p.level)*100)+'%';
-    if(p.defaultName) document.getElementById(`${pokemonId}-img`).src=`https://img.pokemondb.net/sprites/scarlet-violet/normal/${p.defaultName.toLowerCase()}.png`;
-}
-
-// ======= Remove Pokémon =======
-function removePokemonInput(pokemonId){
-    document.getElementById(`pokemon-input-container-${pokemonId}`).remove();
-    document.getElementById(`${pokemonId}-container`).remove();
-    delete pokemonData[pokemonId];
-    saveData();
-}
-
-// ======= Habit Functions =======
-function getHabitsRequiredForLevel(level){ if(level<=10)return 2;if(level<=20)return 3;if(level<=30)return 4; return 5; }
-
-const evolutionData = {
-    'bulbasaur': { level: 16, evolvesTo: 'ivysaur' }, 'ivysaur': { level: 32, evolvesTo: 'venusaur' },
-    'charmander': { level: 16, evolvesTo: 'charmeleon' }, 'charmeleon': { level: 36, evolvesTo: 'charizard' },
-    'squirtle': { level: 16, evolvesTo: 'wartortle' }, 'wartortle': { level: 36, evolvesTo: 'blastoise' },
-    'pikachu': { level: 31, evolvesTo: 'raichu' }, 'clefairy': { level: 31, evolvesTo: 'clefable' },
-    'vulpix': { level: 34, evolvesTo: 'ninetales' }, 'meowth': { level: 28, evolvesTo: 'persian' },
-    'psyduck': { level: 33, evolvesTo: 'golduck' }, 'growlithe': { level: 34, evolvesTo: 'arcanine' },
-    'elekid': { level: 30, evolvesTo: 'electabuzz' }, 'magby': { level: 30, evolvesTo: 'magmar' },
-    'larvitar': { level: 30, evolvesTo: 'pupitar' }, 'pupitar': { level: 55, evolvesTo: 'tyranitar' },
-    'makuhita': { level: 24, evolvesTo: 'hariyama' }, 'swablu': { level: 35, evolvesTo: 'altaria' },
-    'starly': { level: 14, evolvesTo: 'staravia' }, 'staravia': { level: 34, evolvesTo: 'staraptor' },
-    'shinx': { level: 15, evolvesTo: 'luxio' }, 'luxio': { level: 30, evolvesTo: 'luxray' },
-    'buizel': { level: 26, evolvesTo: 'floatzel' }, 'drifloon': { level: 28, evolvesTo: 'drifblim' },
-    'gible': { level: 24, evolvesTo: 'gabite' }, 'gabite': { level: 48, evolvesTo: 'garchomp' },
-    'munchlax': { level: 40, evolvesTo: 'snorlax' }, 'riolu': { level: 30, evolvesTo: 'lucario' },
-    'croagunk': { level: 37, evolvesTo: 'toxicroak' }, 'snivy': { level: 17, evolvesTo: 'servine' },
-    'servine': { level: 36, evolvesTo: 'serperior' }, 'tepig': { level: 17, evolvesTo: 'pignite' },
-    'pignite': { level: 36, evolvesTo: 'emboar' }, 'oshawott': { level: 17, evolvesTo: 'dewott' },
-    'dewott': { level: 36, evolvesTo: 'samurott' }, 'zorua': { level: 30, evolvesTo: 'zoroark' },
-    'minccino': { level: 33, evolvesTo: 'cinccino' }, 'mienfoo': { level: 50, evolvesTo: 'mienshao' },
-    'larvesta': { level: 59, evolvesTo: 'volcarona' }, 'hatenna': { level: 32, evolvesTo: 'hattrem' },
-    'hattrem': { level: 42, evolvesTo: 'hatterene' }, 'sprigatito': { level: 16, evolvesTo: 'floragato' },
-    'floragato': { level: 36, evolvesTo: 'meowscarada' }, 'fuecoco': { level: 16, evolvesTo: 'crocalor' },
-    'crocalor': { level: 36, evolvesTo: 'skeledirge' }, 'quaxly': { level: 16, evolvesTo: 'quaxwell' },
-    'quaxwell': { level: 36, evolvesTo: 'quaquaval' }, 'pawmi': { level: 18, evolvesTo: 'pawmo' },
-    'pawmo': { level: 36, evolvesTo: 'pawmot' }, 'fidough': { level: 26, evolvesTo: 'dachsbun' },
-    'tinkatink': { level: 24, evolvesTo: 'tinkatuff' }, 'tinkatuff': { level: 38, evolvesTo: 'tinkaton' }
-};
-
-function performHabit(pokemonId){
-    const p = pokemonData[pokemonId];
-    p.history.push({level:p.level, xp:p.xp});
-    const req = getHabitsRequiredForLevel(p.level);
-    if(p.xp>=req-1){ p.level++; p.xp=0; evolvePokemon(pokemonId); } else p.xp++;
-    updatePokemon(pokemonId);
-    saveData();
-}
-
-function undoHabit(pokemonId){
-    const p = pokemonData[pokemonId];
-    if(!p.history.length) return;
-    const last = p.history.pop();
-    p.level = last.level; p.xp = last.xp;
-    updatePokemon(pokemonId);
-    saveData();
-}
-
-function evolvePokemon(pokemonId){
-    const p = pokemonData[pokemonId];
-    const name = p.defaultName.toLowerCase();
-    if(evolutionData[name] && p.level >= evolutionData[name].level){
-        p.defaultName = capitalizeFirstLetter(evolutionData[name].evolvesTo);
+function deletePokemonContainer(pid){
+    if(confirm('Delete '+(pokemonData[pid].nickname||pokemonData[pid].defaultName)+'?')){
+        document.getElementById(`${pid}-container`)?.remove();
+        delete pokemonData[pid];
+        saveData();
     }
-    updatePokemon(pokemonId);
 }
 
-// ======= Sorting =======
-function sortByLevel(){
-    const keys = Object.keys(pokemonData).sort((a,b)=>{
-        if(pokemonData[b].level===pokemonData[a].level) return a.localeCompare(b);
-        return pokemonData[b].level - pokemonData[a].level;
-    });
-    reorderPokemonContainers(keys);
-}
-function sortByHabitOrder(){
-    reorderPokemonContainers(Object.keys(pokemonData).sort((a,b)=>a.localeCompare(b)));
-}
-function reorderPokemonContainers(sortedKeys){
-    const container = document.getElementById('pokemonContainer');
-    sortedKeys.forEach(k=>container.appendChild(document.getElementById(`${k}-container`)));
+function updatePokemon(p){
+    const pObj=pokemonData[p]; if(!pObj) return;
+    document.getElementById(`${p}-habit`).innerText=pObj.habit||'None';
+    document.getElementById(`${p}-nickname`).innerText=pObj.nickname||pObj.defaultName;
+    document.getElementById(`${p}-nature`).innerText=pObj.nature;
+    document.getElementById(`${p}-gender`).innerText=pObj.gender==='Male'?'♂':'♀';
+    document.getElementById(`${p}-gender`).className=`gender-sign ${pObj.gender.toLowerCase()}`;
+    document.getElementById(`${p}-level`).innerText=pObj.level;
+    document.getElementById(`${p}-xp`).style.width=(pObj.xp/getHabitsRequiredForLevel(pObj.level)*100)+'%';
+    if(pObj.defaultName) document.getElementById(`${p}-img`).src=`https://img.pokemondb.net/sprites/scarlet-violet/normal/${pObj.defaultName.toLowerCase()}.png`;
 }
 
-// ======= Export/Import =======
-function exportData(){
-    const dataStr = JSON.stringify(pokemonData,null,2);
-    const link = document.createElement('a');
-    link.href='data:application/json;charset=utf-8,'+encodeURIComponent(dataStr);
-    link.download='pokemon_data.json';
-    link.click();
-}
+// ---------------------- Habit Actions -------------------------
+function performHabit(p){ const pObj=pokemonData[p]; pObj.history.push({level:pObj.level,xp:pObj.xp}); const req=getHabitsRequiredForLevel(pObj.level); if(pObj.xp>=req-1){pObj.level++; pObj.xp=0; evolvePokemon(p);} else{pObj.xp++;} updatePokemon(p); saveData();}
+function undoHabit(p){ const pObj=pokemonData[p]; if(pObj.history.length===0) return; const last=pObj.history.pop(); pObj.level=last.level; pObj.xp=last.xp; updatePokemon(p); saveData();}
+function evolvePokemon(p){ const pObj=pokemonData[p]; const c=pObj.defaultName.toLowerCase(); if(evolutionData[c] && pObj.level>=evolutionData[c].level){pObj.defaultName=capitalizeFirstLetter(evolutionData[c].evolvesTo); updatePokemon(p); }}
 
+// ---------------------- Sorting -----------------------------
+function sortByLevel(){ reorderPokemonContainers(Object.keys(pokemonData).sort((a,b)=>pokemonData[b].level-pokemonData[a].level)); }
+function sortByHabitOrder(){ reorderPokemonContainers(Object.keys(pokemonData).sort()); }
+function reorderPokemonContainers(sortedKeys){ const container=document.getElementById('pokemonContainer'); sortedKeys.forEach(k=>container.appendChild(document.getElementById(`${k}-container`)));}
+
+// ---------------------- Export / Import ----------------------
+function exportData(){ const dataStr=JSON.stringify(pokemonData,null,2); const a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(dataStr); a.download='pokemon_data.json'; a.click();}
 function importData(event){
-    const file = event.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = e=>{
-        const imported = JSON.parse(e.target.result);
-        pokemonData = imported;
-        document.getElementById('pokemonInputs').innerHTML='';
-        document.getElementById('pokemonContainer').innerHTML='';
-        pokemonCount = 0;
-        Object.keys(imported).forEach(id=>{
+    const file=event.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=e=>{
+        const imported=JSON.parse(e.target.result);
+        document.getElementById('pokemonInputs').innerHTML=''; document.getElementById('pokemonContainer').innerHTML='';
+        pokemonCount=0; pokemonData={};
+        Object.keys(imported).forEach(pid=>{
             pokemonCount++;
-            createPokemonInputFromData(id, imported[id]);
-            createPokemonContainer(id);
-            updatePokemon(id);
+            const newPid=`pokemon${pokemonCount}`;
+            pokemonData[newPid]=imported[pid];
+            createPokemonContainer(newPid);
         });
         saveData();
     };
     reader.readAsText(file);
 }
 
-// ======= Local Storage Save =======
-function saveData(){ localStorage.setItem('pokemonData', JSON.stringify(pokemonData)); }
+// ---------------------- Initialize ---------------------------
+Object.keys(pokemonData).forEach(pid=>createPokemonContainer(pid));
 </script>
 </body>
 </html>
